@@ -1,0 +1,617 @@
+{
+  "datasets": [
+    {
+      "name": "4e2c366b",
+      "displayName": "no_purchase_counts",
+      "queryLines": [
+        "SELECT g.product_id,\n",
+        "g.no_purchase_count,\n",
+        "s.category,\n",
+        "s.product_name\n",
+        "FROM workspace.default.no_purchase_counts_gold g\n",
+        "JOIN products_silver s\n",
+        "ON g.product_id = s.product_id\n",
+        "ORDER BY no_purchase_count DESC;"
+      ]
+    },
+    {
+      "name": "c4f3ed13",
+      "displayName": "purchased_counts",
+      "queryLines": [
+        "\n",
+        "SELECT MAX(g.product_id) AS product_id,\n",
+        "    MAX(s.product_name) AS product_name,\n",
+        "    MAX(s.category) AS category,\n",
+        "    SUM(g.purchase_count) AS purchase_count\n",
+        "FROM workspace.default.ordered_products_monthly_gold g\n",
+        "JOIN products_silver s ON g.product_id = s.product_id\n",
+        "GROUP BY g.product_id, s.product_name\n",
+        "ORDER BY purchase_count DESC;"
+      ]
+    },
+    {
+      "name": "8968c0c8",
+      "displayName": "product_click_counts",
+      "queryLines": [
+        "SELECT g.product_id,\n",
+        "    s.product_name ,\n",
+        "    SUM(g.click_count) AS click_count\n",
+        "FROM workspace.default.clicked_products_monthly_gold g\n",
+        "JOIN products_silver s ON g.product_id = s.product_id\n",
+        "GROUP BY g.product_id, s.product_name\n",
+        "ORDER BY click_count DESC;"
+      ]
+    },
+    {
+      "name": "9746cbb9",
+      "displayName": "product_click_counts_per_month",
+      "queryLines": [
+        "SELECT \n",
+        "  t.click_count,\n",
+        "  t.product_id,\n",
+        "  t.month,\n",
+        "  p.product_name\n",
+        "FROM (\n",
+        "  SELECT *,\n",
+        "    ROW_NUMBER() OVER (PARTITION BY month ORDER BY click_count DESC) AS rn\n",
+        "  FROM workspace.default.clicked_products_monthly_gold\n",
+        ") t\n",
+        "JOIN workspace.default.products_silver p\n",
+        "ON t.product_id = p.product_id\n",
+        "WHERE t.rn <= 10\n",
+        "ORDER BY t.month, t.click_count DESC;"
+      ]
+    },
+    {
+      "name": "f453ff79",
+      "displayName": "Unique Product Categories Summary",
+      "queryLines": [
+        "SELECT category\n",
+        "FROM products_silver\n",
+        "GROUP BY category"
+      ]
+    }
+  ],
+  "pages": [
+    {
+      "name": "c5425ef0",
+      "displayName": "購入回数",
+      "layout": [
+        {
+          "widget": {
+            "name": "472db397",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "c4f3ed13",
+                  "fields": [
+                    {
+                      "name": "product_name",
+                      "expression": "`product_name`"
+                    },
+                    {
+                      "name": "purchase_count",
+                      "expression": "`purchase_count`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "frame": {
+                "title": "購入回数",
+                "showTitle": true
+              },
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "product_name",
+                  "axis": {
+                    "hideLabels": true,
+                    "hideTitle": false,
+                    "title": "商品名"
+                  },
+                  "displayName": "商品ID",
+                  "scale": {
+                    "type": "categorical",
+                    "sort": {
+                      "by": "y-reversed"
+                    }
+                  }
+                },
+                "y": {
+                  "fieldName": "purchase_count",
+                  "displayName": "購入回数",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "product_name",
+                  "displayName": "商品ID",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "label": {
+                  "show": true
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 12,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "a0bf2c76",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "4e2c366b",
+                  "fields": [
+                    {
+                      "name": "product_name",
+                      "expression": "`product_name`"
+                    },
+                    {
+                      "name": "no_purchase_count",
+                      "expression": "`no_purchase_count`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "frame": {
+                "title": "クリック後に購入されなかった商品",
+                "showTitle": true
+              },
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "product_name",
+                  "axis": {
+                    "hideLabels": true
+                  },
+                  "displayName": "商品名",
+                  "scale": {
+                    "type": "categorical",
+                    "sort": {
+                      "by": "y-reversed"
+                    }
+                  }
+                },
+                "y": {
+                  "fieldName": "no_purchase_count",
+                  "displayName": "クリック回数",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "product_name",
+                  "displayName": "商品名",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "label": {
+                  "show": true
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 6,
+            "width": 12,
+            "height": 6
+          }
+        }
+      ],
+      "pageType": "PAGE_TYPE_CANVAS",
+      "layoutVersion": "GRID_V1"
+    },
+    {
+      "name": "86d80a41",
+      "displayName": "Global Filters",
+      "pageType": "PAGE_TYPE_GLOBAL_FILTERS",
+      "layoutVersion": "GRID_V1"
+    },
+    {
+      "name": "cb8cff62",
+      "displayName": "購入回数(カテゴリ別)",
+      "layout": [
+        {
+          "widget": {
+            "name": "9af46308",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "c4f3ed13",
+                  "fields": [
+                    {
+                      "name": "category",
+                      "expression": "`category`"
+                    },
+                    {
+                      "name": "sum(purchase_count)",
+                      "expression": "SUM(`purchase_count`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "frame": {
+                "title": "購入回数上位10位",
+                "showTitle": true
+              },
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "category",
+                  "axis": {
+                    "hideLabels": true,
+                    "hideTitle": false,
+                    "title": "商品名"
+                  },
+                  "displayName": "カテゴリ(メーカ)",
+                  "scale": {
+                    "type": "categorical",
+                    "sort": {
+                      "by": "y-reversed"
+                    }
+                  }
+                },
+                "y": {
+                  "fieldName": "sum(purchase_count)",
+                  "displayName": "購入回数",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "category",
+                  "displayName": "カテゴリ(メーカ)",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "label": {
+                  "show": true
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 12,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "ae2c976c",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "4e2c366b",
+                  "fields": [
+                    {
+                      "name": "category",
+                      "expression": "`category`"
+                    },
+                    {
+                      "name": "sum(no_purchase_count)",
+                      "expression": "SUM(`no_purchase_count`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "frame": {
+                "title": "クリック後に購入されなかった商品(上位10位)",
+                "showTitle": true
+              },
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "category",
+                  "axis": {
+                    "hideLabels": true
+                  },
+                  "displayName": "商品名",
+                  "scale": {
+                    "type": "categorical",
+                    "sort": {
+                      "by": "y-reversed"
+                    }
+                  }
+                },
+                "y": {
+                  "fieldName": "sum(no_purchase_count)",
+                  "displayName": "クリック回数",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "category",
+                  "displayName": "商品名",
+                  "scale": {
+                    "type": "categorical",
+                    "mappings": [
+                      {
+                        "value": "Reagate",
+                        "color": {
+                          "themeColorType": "visualizationColors",
+                          "position": 3
+                        }
+                      },
+                      {
+                        "value": "Rony",
+                        "color": {
+                          "themeColorType": "visualizationColors",
+                          "position": 4
+                        }
+                      },
+                      {
+                        "value": "Sioneer",
+                        "color": {
+                          "themeColorType": "visualizationColors",
+                          "position": 5
+                        }
+                      }
+                    ]
+                  }
+                },
+                "label": {
+                  "show": true
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 6,
+            "width": 12,
+            "height": 6
+          }
+        }
+      ],
+      "pageType": "PAGE_TYPE_CANVAS",
+      "layoutVersion": "GRID_V1"
+    },
+    {
+      "name": "91764099",
+      "displayName": "クリック回数",
+      "layout": [
+        {
+          "widget": {
+            "name": "08a9f7e0",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "8968c0c8",
+                  "fields": [
+                    {
+                      "name": "product_name",
+                      "expression": "`product_name`"
+                    },
+                    {
+                      "name": "click_count",
+                      "expression": "`click_count`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "frame": {
+                "title": "商品ごとのクリック回数(全期間)",
+                "showTitle": true
+              },
+              "mark": {
+                "colors": [
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 5
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 2
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 3
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 4
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 5
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 6
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 7
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 8
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 9
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 10
+                  }
+                ]
+              },
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "product_name",
+                  "axis": {
+                    "hideTitle": false,
+                    "hideLabels": true
+                  },
+                  "displayName": "商品名",
+                  "scale": {
+                    "type": "categorical",
+                    "sort": {
+                      "by": "y-reversed"
+                    }
+                  }
+                },
+                "y": {
+                  "fieldName": "click_count",
+                  "displayName": "クリック回数",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "product_name",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "label": {
+                  "show": true
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 12,
+            "height": 7
+          }
+        },
+        {
+          "widget": {
+            "name": "17024ae2",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "9746cbb9",
+                  "fields": [
+                    {
+                      "name": "month",
+                      "expression": "`month`"
+                    },
+                    {
+                      "name": "product_name",
+                      "expression": "`product_name`"
+                    },
+                    {
+                      "name": "click_count",
+                      "expression": "`click_count`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "frame": {
+                "title": "商品ごとのクリック回数(月毎)",
+                "showTitle": true
+              },
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "product_name",
+                  "displayName": "商品名",
+                  "scale": {
+                    "type": "categorical",
+                    "sort": {
+                      "by": "y-reversed"
+                    }
+                  }
+                },
+                "y": {
+                  "fieldName": "click_count",
+                  "displayName": "クリック回数",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "month",
+                  "legend": {
+                    "position": "right"
+                  },
+                  "displayName": "月",
+                  "scale": {
+                    "type": "categorical",
+                    "mappings": [
+                      {
+                        "value": "2019-08",
+                        "color": {
+                          "themeColorType": "visualizationColors",
+                          "position": 5
+                        }
+                      }
+                    ]
+                  }
+                },
+                "label": {
+                  "show": true
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 7,
+            "width": 12,
+            "height": 6
+          }
+        }
+      ],
+      "pageType": "PAGE_TYPE_CANVAS",
+      "layoutVersion": "GRID_V1"
+    }
+  ],
+  "uiSettings": {
+    "theme": {
+      "widgetHeaderAlignment": "ALIGNMENT_UNSPECIFIED"
+    },
+    "applyModeEnabled": false
+  }
+}
